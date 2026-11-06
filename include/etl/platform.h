@@ -498,7 +498,22 @@ SOFTWARE.
   #define ETL_EXPLICIT_EXPR(...) explicit
 #endif
 
-#if ETL_USING_CPP20 && ETL_USING_STL
+//*************************************
+// Determine if the ETL uses std::construct_at and std::destroy_at when not using the STL.
+// By default, only where <memory> does not exist, so that nothing changes where it does.
+#if !defined(ETL_USING_STD_CONSTRUCT_AT)
+  #if ETL_USING_CPP20 && !ETL_USING_STL && (defined(__GNUC__) || defined(__clang__)) && defined(__has_include)
+    #if !__has_include(<memory>)
+      #define ETL_USING_STD_CONSTRUCT_AT 1
+    #endif
+  #endif
+#endif
+
+#if !defined(ETL_USING_STD_CONSTRUCT_AT)
+  #define ETL_USING_STD_CONSTRUCT_AT 0
+#endif
+
+#if ETL_USING_CPP20 && (ETL_USING_STL || ETL_USING_STD_CONSTRUCT_AT)
   #define ETL_CONSTEXPR20_STL constexpr
 #else
   #define ETL_CONSTEXPR20_STL

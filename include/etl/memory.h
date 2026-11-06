@@ -51,6 +51,29 @@ SOFTWARE.
 ///\defgroup memory memory
 ///\ingroup etl
 
+#if ETL_USING_CPP20 && !ETL_USING_STL && ETL_USING_STD_CONSTRUCT_AT
+  #if __has_include(<memory>)
+    #include <memory>
+  #else
+// Compilers allow placement new in constant evaluation only inside these two names, so they must be
+// in namespace std. ETL declares std::initializer_list the same way without the STL.
+namespace std
+{
+  template <typename T, typename... TArgs>
+  constexpr T* construct_at(T* p, TArgs&&... args)
+  {
+    return ::new (static_cast<void*>(p)) T(etl::forward<TArgs>(args)...);
+  }
+
+  template <typename T>
+  constexpr void destroy_at(T* p)
+  {
+    p->~T();
+  }
+} // namespace std
+  #endif
+#endif
+
 namespace etl
 {
   namespace private_memory
@@ -1785,7 +1808,7 @@ namespace etl
   } // namespace ranges
 #endif
 
-#if ETL_USING_STL && ETL_USING_CPP20
+#if ETL_USING_CPP20 && (ETL_USING_STL || ETL_USING_STD_CONSTRUCT_AT)
     //*****************************************************************************
   /// Constructs an item at address p with value constructed from 'args'.
   /// https://en.cppreference.com/w/cpp/memory/construct_at
@@ -1851,7 +1874,7 @@ namespace etl
   } // namespace ranges
 #endif
 
-#if ETL_USING_STL && ETL_USING_CPP20
+#if ETL_USING_CPP20 && (ETL_USING_STL || ETL_USING_STD_CONSTRUCT_AT)
     //*****************************************************************************
   /// Destroys an item at address p.
   /// https://en.cppreference.com/w/cpp/memory/destroy_at
